@@ -1,24 +1,26 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Users from './users';
-import { Flex, Input, Heading, Button, FormControl, FormLabel, FormHelperText, Select, CircularProgress } from '@chakra-ui/react';
+import { Flex, Input, Heading, Button, FormControl, FormLabel, FormHelperText, Textarea, CircularProgress, Container } from '@chakra-ui/react';
+import { useParams } from 'next/navigation';
+import Comment from './comment';
 
-export default function Home() {
-    const [users, setUsers] = useState<any[]>([]);
+export default function Comments({postId}:{postId: number}) {
+    
+    const [comments, setComments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [errors, setError] = useState<any>({})
     useEffect(() => {
-        fetch('https://gorest.co.in/public/v2/users', {
+        fetch(`https://gorest.co.in/public/v2/posts/${postId}/comments`, {
             cache: 'no-cache',
         }).then((response) => response.json()).then((data) => {
-          setUsers(data)
+          setComments(data)
           setLoading(false)
         });
     }, []);
     const handleSubmit = (e: any) => {
       e.preventDefault();
       const data = new FormData(e.target);
-      fetch('https://gorest.co.in/public/v2/users', {
+      fetch(`https://gorest.co.in/public/v2/posts/${postId}/comments`, {
         method: 'POST',
         body: JSON.stringify(Object.fromEntries(data)),
         headers: {
@@ -33,8 +35,8 @@ export default function Home() {
         }
         return response.json()
       }).then((data) => {
-        const updatedUser = [...users, data]
-        setUsers(updatedUser)
+        const updatedPosts = [data, ...comments]
+        setComments(updatedPosts)
         setError({})
         e.target.reset()
       }).catch((error) => {
@@ -52,25 +54,25 @@ export default function Home() {
       })
     }
     return (
-      <Flex direction={{base:'column', lg:'row'}}>
-        <Flex direction='column' width={{base:'100%', lg:'50%'}} p={5}>
-            <Heading size='md' mb={3}>Users</Heading>
+    <Container maxW='container.xl'>
+      <Flex direction='column'>
+        <Flex direction='column' width='100%' p={5}>
+            <Heading size='md' mb={3}>Comments</Heading>
             {loading ?<CircularProgress isIndeterminate /> :
-              users?.map(
-                (user: {
-                    id: number;
-                    name: string;
-                    email: string;
-                    gender: string;
-                    status: string;
+              comments?.map(
+                (comment: {
+                    id: number,
+                    post_id: number,
+                    name: string,
+                    email: string,
+                    body: string
                 }) => (
-                    <Users key={user.id} user={user} />
+                    <Comment key={comment.id} comment={comment} />
                 )
             )}
         </Flex>
-        <Flex direction='column' width={{base:'100%', lg:'50%'}} p={5}>
+        <Flex direction='column' width='100%' p={5}>
           <form onSubmit={handleSubmit}>
-            <Heading size='md' mb={3}>Add User</Heading>
             <FormControl mb={3}>
               <FormLabel>Name</FormLabel>
               <Input placeholder='Name' name='name' size='md' errorBorderColor='red' isInvalid={errors?.name?.hasError}/>     
@@ -82,18 +84,16 @@ export default function Home() {
              {errors?.email?.hasError && <FormHelperText color='red'>{errors?.email?.msg}</FormHelperText>}
             </FormControl>
             <FormControl mb={3}>
-              <FormLabel>Gender</FormLabel>
-              <Select placeholder='Gender' size='md' name='gender' errorBorderColor='red'>
-                <option value='male'>Male</option>
-                <option value='female'>Female</option>
-              </Select>   
+              <FormLabel>Comment</FormLabel>
+              <Textarea placeholder='Comment Body' size='md' name='body' errorBorderColor='red' isInvalid={errors?.body?.hasError}/>    
+             {errors?.body?.hasError && <FormHelperText color='red'>{errors?.body?.msg}</FormHelperText>}
             </FormControl>
-            <Input type='hidden' value='active' name='status'></Input> 
             <Button colorScheme='teal' size='md' type='submit'>
-              Add new user 
+                Comment
             </Button>
             </form>
         </Flex>
       </Flex>
+      </Container>
     );
 }
